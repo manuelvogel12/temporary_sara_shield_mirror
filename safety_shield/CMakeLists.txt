@@ -1,0 +1,148 @@
+cmake_minimum_required(VERSION 3.0.2)
+project(safety_shield)
+
+## Compile as C++17
+add_compile_options(-std=c++17)
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+## Find catkin macros and libraries
+#find_package(Eigen3 3.4 REQUIRED NO_MODULE)
+INCLUDE_DIRECTORIES ( "$ENV{EIGEN3_INCLUDE_DIR}" )
+# Find Python
+# IF YOU DON'T WANT TO USE CONDA, DISABLE THESE THREE LINES
+#set(PYTHON_EXECUTABLE "$ENV{CONDA_PREFIX}/bin/python")
+#set(PYTHON_INCLUDE_DIR "$ENV{CONDA_PREFIX}/include/python3.8")
+#set(PYTHON_LIBRARY "$ENV{CONDA_PREFIX}/lib/libpython3.8.so")
+#set(PYTHON_LIBRARY_DEBUG "$ENV{CONDA_PREFIX}/lib/libpython3.8.so")
+#find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+
+include_directories(
+        include
+)
+
+## Declare a C++ library
+add_library(${PROJECT_NAME}
+        src/safety_shield.cc
+        src/long_term_traj.cc
+        src/motion.cc
+        src/path.cc
+        src/robot_reach.cc
+        src/human_reach.cc
+        src/verify_iso.cc
+        src/kalman_filter.cc
+        src/measurement_handler.cc
+        #src/advanced_verify_iso.cc
+        )
+
+# Add external subdirectories
+add_subdirectory(external/pybind11)
+add_subdirectory(external/SaRA/ReachLib)
+add_subdirectory(external/LongTermPlanner)
+add_subdirectory(external/spdlog)
+add_subdirectory(external/yaml-cpp)
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/pybind11/include>
+    $<INSTALL_INTERFACE:external/pybind11/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/SaRA/ReachLib/include>
+    $<INSTALL_INTERFACE:external/SaRA/ReachLib/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/LongTermPlanner/include>
+    $<INSTALL_INTERFACE:external/LongTermPlanner/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include>
+    $<INSTALL_INTERFACE:external/spdlog/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/yaml-cpp/include>
+    $<INSTALL_INTERFACE:external/yaml-cpp/include>
+    )
+
+target_link_directories(${PROJECT_NAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/SaRA/ReachLib/src>
+    $<INSTALL_INTERFACE:external/SaRA/ReachLib/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/LongTermPlanner/src>
+    $<INSTALL_INTERFACE:external/LongTermPlanner/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/src>
+    $<INSTALL_INTERFACE:external/spdlog/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/yaml-cpp/src>
+    $<INSTALL_INTERFACE:external/yaml-cpp/src>
+    )
+
+target_link_libraries(${PROJECT_NAME} SaRA long_term_planner spdlog yaml-cpp)
+
+export(TARGETS ${PROJECT_NAME} SaRA long_term_planner spdlog yaml-cpp
+      FILE ${PROJECT_NAME}Config.cmake)
+
+install(EXPORT ${PROJECT_NAME}Config
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+
+install(DIRECTORY include/safety_shield
+        DESTINATION include)
+install(DIRECTORY external/LongTermPlanner/include/long_term_planner
+        DESTINATION include)
+install(DIRECTORY external/spdlog/include/spdlog
+        DESTINATION include)
+install(DIRECTORY external/pybind11/include/pybind11
+        DESTINATION include)
+install(DIRECTORY external/yaml-cpp/include/yaml-cpp
+        DESTINATION include)
+install(DIRECTORY external/SaRA/ReachLib/include/
+       DESTINATION include)
+
+
+install(TARGETS ${PROJECT_NAME} long_term_planner spdlog yaml-cpp SaRA
+       EXPORT ${PROJECT_NAME}Config
+       LIBRARY DESTINATION lib
+       ARCHIVE DESTINATION lib
+       RUNTIME DESTINATION bin
+)
+
+add_executable(debug src/debug.cc)
+target_link_libraries(debug ${PROJECT_NAME} long_term_planner spdlog yaml-cpp)
+#############
+## GTest ##
+#############
+enable_testing()
+find_package(GTest REQUIRED)
+include(GoogleTest)
+
+add_executable(long_term_traj_tests tests/src/long_term_traj_tests.cc)
+target_include_directories(long_term_traj_tests PUBLIC tests/include)
+target_link_libraries(long_term_traj_tests ${PROJECT_NAME} GTest::GTest GTest::Main)
+add_executable(human_reach_tests tests/src/human_reach_tests.cc)
+target_include_directories(human_reach_tests PUBLIC tests/include)
+target_link_libraries(human_reach_tests ${PROJECT_NAME} GTest::GTest GTest::Main)
+add_executable(motion_tests tests/src/motion_tests.cc)
+target_include_directories(motion_tests PUBLIC tests/include)
+target_link_libraries(motion_tests ${PROJECT_NAME} GTest::GTest GTest::Main)
+add_executable(path_tests tests/src/path_tests.cc)
+target_include_directories(path_tests PUBLIC tests/include)
+target_link_libraries(path_tests ${PROJECT_NAME} GTest::GTest GTest::Main)
+add_executable(robot_reach_tests tests/src/robot_reach_tests.cc)
+target_include_directories(robot_reach_tests PUBLIC tests/include)
+target_link_libraries(robot_reach_tests ${PROJECT_NAME} GTest::GTest GTest::Main)
+add_executable(verify_iso_tests tests/src/verify_iso_tests.cc)
+target_include_directories(verify_iso_tests PUBLIC tests/include)
+target_link_libraries(verify_iso_tests ${PROJECT_NAME} GTest::GTest GTest::Main)
+add_executable(safety_shield_tests tests/src/safety_shield_tests.cc)
+target_include_directories(safety_shield_tests PUBLIC tests/include)
+target_link_libraries(safety_shield_tests ${PROJECT_NAME} GTest::GTest GTest::Main)
+gtest_discover_tests(long_term_traj_tests)
+gtest_discover_tests(human_reach_tests)
+gtest_discover_tests(motion_tests)
+gtest_discover_tests(path_tests)
+gtest_discover_tests(robot_reach_tests)
+gtest_discover_tests(verify_iso_tests)
+gtest_discover_tests(safety_shield_tests)
+
+#catkin_add_gtest(verify_iso_test tests/capsule_tests.cc tests/verify_iso_fixture.h)
+#target_link_libraries(verify_iso_test ${catkin_LIBRARIES} ${PROJECT_NAME}_lib)
+
+#catkin_add_gtest(long_term_traj_tests tests/long_term_traj_tests.cc tests/long_term_traj_fixture.h)
+#target_link_libraries(long_term_traj_tests ${catkin_LIBRARIES} ${PROJECT_NAME}_lib)
+
+##############
+## Bindings ##
+##############
+pybind11_add_module(safety_shield_py MODULE bindings/safety_shield_bindings.cpp)
+target_link_libraries(safety_shield_py PRIVATE ${PROJECT_NAME} long_term_planner spdlog yaml-cpp)
