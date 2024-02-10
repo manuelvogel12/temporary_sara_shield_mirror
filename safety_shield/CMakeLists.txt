@@ -79,15 +79,16 @@ install(EXPORT ${PROJECT_NAME}Config
 install(DIRECTORY include/safety_shield
         DESTINATION include)
 install(DIRECTORY external/LongTermPlanner/include/long_term_planner
-        DESTINATION include)
+        DESTINATION lib/../external/LongTermPlanner/include/)
 install(DIRECTORY external/spdlog/include/spdlog
-        DESTINATION include)
+        DESTINATION lib/../external/spdlog/include/)
 install(DIRECTORY external/pybind11/include/pybind11
-        DESTINATION include)
+        DESTINATION lib/../external/pybind11/include/)
 install(DIRECTORY external/yaml-cpp/include/yaml-cpp
-        DESTINATION include)
+        DESTINATION lib/../external/yaml-cpp/include/)
 install(DIRECTORY external/SaRA/ReachLib/include/
-       DESTINATION include)
+       DESTINATION lib/../external/SaRA/ReachLib/include/)
+
 
 
 install(TARGETS ${PROJECT_NAME} long_term_planner spdlog yaml-cpp SaRA
